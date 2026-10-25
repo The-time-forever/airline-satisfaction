@@ -29,6 +29,9 @@ def main():
     elif args and args[0] == 'explore':
         from airline_satisfaction.lgbm_exploration import main as explore_main
         explore_main(args[1:])
+    elif args and args[0] == 'final':
+        from airline_satisfaction.final_model import main as final_main
+        final_main(args[1:])
     else:
         preprocess_main(args[1:] if args and args[0] == 'preprocess' else args)
 
