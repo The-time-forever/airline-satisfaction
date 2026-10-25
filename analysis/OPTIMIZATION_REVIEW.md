@@ -533,12 +533,23 @@ CV 提升 5.5e-5，公开榜只动 +1e-5、名次基本不变（榜上并列 0.9
 ### 采用状态
 
 采用规则在运行前就写进了代码：两套划分都要求 Δ>0、至少 4/5 折领先，原划分配对检验 p<0.10。
-本次两套划分全部通过（`artifacts/multimodel/summary.json` 中 `adopted: true`），但**没有加 `--adopt`**，
-因此 `artifacts/submission.csv` 与 `artifacts/selected_model.json` 仍是 `final_5x3`（fusion: false）。
-是否启用融合由仓库负责人决定；一旦启用，`selected_model.json` 会记录 `fusion: true` 与成员权重。
+正式运行（`--seeds 42 1042 2042`）的结果：
+
+- LightGBM 成员（3 seed）0.960589，XGBoost 0.960033，MLP 0.957831；
+- 融合 **0.960696**（+1.07e-4，5/5 折，Log Loss 0.223994）；
+- 相对**已采用的 5×3 单模型**做配对检验：z=1.59、**p=0.112**，因此**自动门拒绝采用**
+  （`adopted: false`）。
+
+原因是参照系变了：融合相对 1 seed 的 LGB 是 +1.47e-4（p=0.033），但相对 3 seed 的 LGB 只剩 +1.07e-4，
+而“每折多 seed”本身就吃掉了约 4e-5 的方差。融合机制在两类参照下都为正、5/5 折领先，
+因此按仓库负责人决定**人工采用**（`artifacts/multimodel/selection.json` 中
+`gate.overridden = true` 记录了原规则、实际 p 值与理由）。
+
+当前提交：`artifacts/submission.csv` = 0.8·LightGBM(5 折 × 3 seed) + 0.1·XGBoost + 0.1·MLP 的 logit 平均，
+`artifacts/selected_model.json` 记录 `fusion: true`、成员权重与成员目录。
 
 实现：`airline_satisfaction/neural.py`（`EmbeddingMLPClassifier`，可 joblib 保存并复现）、
-`airline_satisfaction/multimodel.py`（成员训练、融合、两套划分复核、报告），
-`python main.py multimodel --weights 0.8 0.1 0.1`。新增 4 个测试：NN 重载复现、未见类别、
-融合产物完整性、配对 DeLong 正确性。
+`airline_satisfaction/multimodel.py`（成员训练、融合、两套划分复核、报告、采用门），
+`python main.py multimodel --weights 0.8 0.1 0.1 --seeds 42 1042 2042`。
+新增 4 个测试：NN 重载复现、未见类别、融合产物完整性、配对 DeLong 正确性。
 

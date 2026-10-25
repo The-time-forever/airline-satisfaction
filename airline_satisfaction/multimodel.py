@@ -44,10 +44,12 @@ XGBOOST = {
 NEURAL = {'epochs': 12, 'seed': 42}
 
 
-def train_member(name, train, test, folds, destination, threads=4, log=print):
-    """Fit one member per fold; return aligned OOF and test probabilities."""
+def train_member(name, train, test, folds, destination, threads=4, seeds=(42,), log=print):
+    """Fit one member per fold and seed; return aligned OOF and test probabilities."""
     if name not in MEMBERS:
         raise ValueError(f'Unknown member {name}.')
+    if not seeds or len(set(seeds)) != len(seeds):
+        raise ValueError('Seeds must be unique and non-empty.')
     X = train.drop(columns=['id', TARGET])
     y = train[TARGET].astype(int)
     raw_test = test.drop(columns='id')
@@ -63,27 +65,35 @@ def train_member(name, train, test, folds, destination, threads=4, log=print):
         fit_rows = np.flatnonzero(fold_ids != fold)
         valid_rows = np.flatnonzero(fold_ids == fold)
         if name == 'neural':
-            estimator = EmbeddingMLPClassifier(**NEURAL)
             X_fit, X_valid, X_test = X.iloc[fit_rows], X.iloc[valid_rows], raw_test
-            saved = estimator
         else:
             preprocessor = TargetStatisticsPreprocessor(groups=('context_interactions',),
                                                         smooth='auto')
             X_fit = preprocessor.fit_transform(X.iloc[fit_rows], y.iloc[fit_rows])
             X_valid = preprocessor.transform(X.iloc[valid_rows])
             X_test = preprocessor.transform(raw_test)
-            estimator = (LGBMClassifier(**(LIGHTGBM | {'n_jobs': threads}))
-                         if name == 'lightgbm'
-                         else XGBClassifier(**(XGBOOST | {'n_jobs': threads})))
-            saved = Pipeline([('preprocessor', preprocessor), ('model', estimator)])
-        estimator.fit(X_fit, y.iloc[fit_rows])
-        probability = positive_probabilities(estimator, X_valid)
-        oof[valid_rows] = probability
-        test_probability += positive_probabilities(estimator, X_test) / len(fold_numbers)
+        valid_probability = np.zeros(len(valid_rows))
+        for position, seed in enumerate(seeds):
+            if name == 'neural':
+                estimator = EmbeddingMLPClassifier(**(NEURAL | {'seed': seed}))
+            elif name == 'lightgbm':
+                estimator = LGBMClassifier(**(LIGHTGBM | {'random_state': seed,
+                                                          'n_jobs': threads}))
+            else:
+                estimator = XGBClassifier(**(XGBOOST | {'random_state': seed,
+                                                        'n_jobs': threads}))
+            estimator.fit(X_fit, y.iloc[fit_rows])
+            valid_probability += positive_probabilities(estimator, X_valid) / len(seeds)
+            test_probability += (positive_probabilities(estimator, X_test)
+                                 / (len(seeds) * len(fold_numbers)))
+            if position == 0:
+                saved = (estimator if name == 'neural'
+                         else Pipeline([('preprocessor', preprocessor), ('model', estimator)]))
+                joblib.dump(saved, member_dir / f'fold_{fold}.joblib', compress=3)
+        oof[valid_rows] = valid_probability
         rows.append({'fold': int(fold),
-                     'roc_auc': float(roc_auc_score(y.iloc[valid_rows], probability)),
-                     'log_loss': float(log_loss(y.iloc[valid_rows], probability))})
-        joblib.dump(saved, member_dir / f'fold_{fold}.joblib', compress=3)
+                     'roc_auc': float(roc_auc_score(y.iloc[valid_rows], valid_probability)),
+                     'log_loss': float(log_loss(y.iloc[valid_rows], valid_probability))})
         log(f'  {name} fold {fold}: AUC={rows[-1]["roc_auc"]:.6f} '
             f'({time.perf_counter() - started:.0f}s)')
     if not np.isfinite(oof).all():
@@ -119,13 +129,16 @@ def summarise(name, y, fold_ids, reference, candidate):
             'paired_p': float(p_value)}
 
 
-def run_split(train, test, folds, destination, weights, threads=4, log=print):
+def run_split(train, test, folds, destination, weights, threads=4, seeds_by_member=None,
+              log=print):
     """Train every member on one split and evaluate the fixed logit blend."""
     y = train[TARGET].astype(int).to_numpy()
     fold_ids = folds.fold.to_numpy()
+    seeds_by_member = seeds_by_member or {}
     destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=True)
-    members = {name: train_member(name, train, test, folds, destination, threads, log)
+    members = {name: train_member(name, train, test, folds, destination, threads,
+                                  tuple(seeds_by_member.get(name, (42,))), log)
                for name in MEMBERS}
     reference = members['lightgbm']['oof']
     candidate = blend(np.column_stack([members[name]['oof'] for name in MEMBERS]),
@@ -189,6 +202,8 @@ def main(argv=None):
     parser.add_argument('--n-splits', type=int, default=5)
     parser.add_argument('--weights', type=float, nargs='+', default=[0.8, 0.1, 0.1],
                         help=f'Weights for {", ".join(MEMBERS)}; must sum to one.')
+    parser.add_argument('--seeds', type=int, nargs='+', default=[42],
+                        help='Seeds for the LightGBM member, averaged within each fold.')
     parser.add_argument('--threads', type=int, default=4)
     parser.add_argument('--confirm-seed', type=int, default=2026)
     parser.add_argument('--output-dir', type=Path, default=ROOT / 'artifacts/multimodel')
@@ -210,13 +225,13 @@ def main(argv=None):
                      else make_folds(train, n_splits=args.n_splits, seed=42))
     validate_folds(train, primary_folds)
     primary = run_split(train, test, primary_folds, args.output_dir / 'primary',
-                        weights, args.threads)
+                        weights, args.threads, {'lightgbm': tuple(args.seeds)})
     confirmation = None
     if not args.skip_confirmation:
         fresh = make_folds(train, n_splits=primary_folds.fold.nunique(),
                            seed=args.confirm_seed)
         result = run_split(train, test, fresh, args.output_dir / f'confirm_{args.confirm_seed}',
-                           weights, args.threads)
+                           weights, args.threads, {'lightgbm': tuple(args.seeds)})
         confirmation = {'seed': args.confirm_seed, 'result': result}
 
     rule = ('两套划分都要求 Δ>0、至少 4/5 折领先，且原划分的配对检验 p<0.10。'
@@ -233,7 +248,8 @@ def main(argv=None):
         raise ValueError('Invalid blended probabilities.')
     result_submission.to_csv(args.output_dir / 'submission.csv', index=False)
     summary = {'experiment': 'multimodel_logit', 'members': list(MEMBERS),
-               'weights': weights, 'primary': primary['blend'],
+               'weights': weights, 'member_seeds': {'lightgbm': list(args.seeds)},
+               'primary': primary['blend'],
                'members_primary': primary['members'],
                'confirmation': None if confirmation is None else {
                    'seed': confirmation['seed'], 'blend': confirmation['result']['blend'],
@@ -247,6 +263,7 @@ def main(argv=None):
         selection = {'model': 'lightgbm', 'fusion': True, 'experiment': 'multimodel_logit',
                      'pipeline_directory': str((args.output_dir / 'primary' / 'members').resolve()),
                      'members': list(MEMBERS), 'weights': weights,
+                     'member_seeds': {'lightgbm': list(args.seeds)},
                      'original_cv': primary['blend'],
                      'confirmation_seed': args.confirm_seed,
                      'confirmation': None if confirmation is None else confirmation['result']['blend']}
