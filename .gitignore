@@ -1,0 +1,13 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Reproducible local preprocessing outputs
+artifacts/
+
+# Competition data (Kaggle rules: do not redistribute)
+data/
