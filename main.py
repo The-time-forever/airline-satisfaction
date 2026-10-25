@@ -32,6 +32,9 @@ def main():
     elif args and args[0] == 'final':
         from airline_satisfaction.final_model import main as final_main
         final_main(args[1:])
+    elif args and args[0] == 'multimodel':
+        from airline_satisfaction.multimodel import main as multimodel_main
+        multimodel_main(args[1:])
     else:
         preprocess_main(args[1:] if args and args[0] == 'preprocess' else args)
 

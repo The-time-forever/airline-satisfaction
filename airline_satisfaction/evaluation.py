@@ -9,6 +9,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from scipy.stats import rankdata
 from sklearn.metrics import (
     accuracy_score, average_precision_score, brier_score_loss, confusion_matrix,
     f1_score, log_loss, precision_recall_curve, precision_score, recall_score,
@@ -71,6 +72,28 @@ def load_predictions(train, folds, model_dir, models):
             raise ValueError(f'Invalid OOF probabilities for {name}.')
         probabilities[name] = p
     return probabilities
+
+
+def paired_auc_delta(y_true, reference, candidate):
+    """DeLong paired standard error for AUC(candidate) - AUC(reference).
+
+    Returns (delta, standard_error); the two score vectors must be aligned row by row.
+    """
+    def components(scores):
+        labels = np.asarray(y_true, dtype=bool)
+        scores = np.asarray(scores, dtype=float)
+        positive, negative = scores[labels], scores[~labels]
+        m, n = len(positive), len(negative)
+        if m < 2 or n < 2:
+            raise ValueError('Paired AUC test needs at least two rows per class.')
+        ranks = rankdata(np.concatenate([positive, negative]))
+        return (ranks[:m] - (m + 1) / 2) / n, (ranks[m:].mean() - ranks[m:]) / m, m, n
+
+    a10, a01, m, n = components(reference)
+    b10, b01, _, _ = components(candidate)
+    variance = ((a10.var(ddof=1) + b10.var(ddof=1) - 2 * np.cov(a10, b10)[0, 1]) / m
+                + (a01.var(ddof=1) + b01.var(ddof=1) - 2 * np.cov(a01, b01)[0, 1]) / n)
+    return float(b10.mean() - a10.mean()), float(np.sqrt(max(variance, 0.0)))
 
 
 def segment_definitions(train):

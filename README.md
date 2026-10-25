@@ -127,3 +127,5 @@ python main.py ensemble
 进一步探索当前目标统计模型：`python main.py explore`。固定原五折比较树数、叶子数、目标编码平滑、航程画像/频次和评分×场景目标统计，最佳有增益候选在种子 2030 五折配对复核。考虑复杂度，默认两套划分平均增益均至少 0.00005 且至少三折领先才更新当前模型。产物位于 `artifacts/lgbm_exploration/`。
 
 最终训练协议（折数 × 随机种子）：`python main.py final --seeds 42 1042 2042`。沿用已采用的特征族与调优参数，逐折独立拟合预处理，每折训练多个种子并把所有折、所有种子的测试概率平均。写入 `artifacts/final/`（`REPORT.md`、`summary.json`、`oof.csv`、`models/fold_<k>.joblib`、`submission.csv`）。只有显式加 `--adopt` 才会覆盖 `artifacts/submission.csv` 与 `artifacts/selected_model.json`；保存的每折 Pipeline 是第 1 个种子的模型，供诊断复现。同一探针上的对照显示 5 折 × 3 种子比 5 折 × 1 种子 +5.1e-5，而 10 折 × 3 种子与 5 折 × 3 种子持平（0.961355 vs 0.961356），因此默认保持 5 折。
+
+三模型融合（实验性，需要 torch）：`python main.py multimodel --weights 0.8 0.1 0.1`。成员为 LightGBM（目标统计特征）、XGBoost（同一预处理）与 embedding MLP（原始特征，不经目标编码），按固定权重做 logit 平均；原划分与 `--confirm-seed` 新划分各训练一次，两套划分都要求提升且至少 4/5 折领先，原划分配对检验 p<0.10 才允许 `--adopt`。写入 `artifacts/multimodel/`。

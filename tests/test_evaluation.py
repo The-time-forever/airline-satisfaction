@@ -5,7 +5,9 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from airline_satisfaction.evaluation import metrics, calibration_bins, load_predictions
+from airline_satisfaction.evaluation import (
+    metrics, calibration_bins, load_predictions, paired_auc_delta,
+)
 
 
 class EvaluationTests(unittest.TestCase):
@@ -45,6 +47,20 @@ class EvaluationTests(unittest.TestCase):
             oof.to_csv(path, index=False)
             with self.assertRaises(ValueError):
                 load_predictions(train, folds, root, ['model'])
+
+    def test_paired_auc_delta_matches_known_shift(self):
+        rng = np.random.default_rng(0)
+        y = np.r_[np.zeros(400), np.ones(400)]
+        base = rng.normal(size=800)
+        better = base + 1.2 * y - 0.6  # separates the classes more than the baseline
+        delta, error = paired_auc_delta(y, base, better)
+        self.assertGreater(delta, 0.05)
+        self.assertGreater(error, 0)
+        same_delta, same_error = paired_auc_delta(y, base, base)
+        self.assertEqual(same_delta, 0.)
+        self.assertLess(same_error, 1e-8)  # floating-point noise only
+        with self.assertRaises(ValueError):
+            paired_auc_delta([0, 0, 1], [.1, .2, .3], [.1, .3, .2])
 
 
 if __name__ == '__main__':
