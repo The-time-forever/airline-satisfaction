@@ -1,0 +1,64 @@
+\section{Discussion and limitations}
+
+\paragraph{A rule of thumb.} Across the interventions we measured, the outcome is summarised by
+one sentence: \emph{changes that alter the hypothesis class transfer to unseen data; changes that
+reduce the variance of a fixed hypothesis class mostly do not.} The target encoding of the
+distance is the extreme case of the first kind ($+13.5$ \dlt{}, transfer $\approx1$), a new
+architecture family is a milder version of it ($+1.0$ \dlt{}, transfer 1.5), and seed
+averaging, fold count, stackers and pseudo-labels belong to the second kind. The practical
+consequence is a budget rule: if a change costs more than an hour and is expected to buy less
+than \dlt{3} in CV, it will not be visible on a board whose granularity is $10^{-4}$.
+
+\paragraph{The remaining gap is a budget, not a trick.} The top decile needs 1.1 \dlt{} more.
+At $2$--$5$ \dlt{} per qualifying member (strong and residual-correlated below 0.99), that is
+20--50 additional members --- consistent with the hundreds of members that public stacks
+combine. We did not pursue the shared-OOF route, which is the only way to reach that scale
+within a competition, because it cannot be reproduced from a repository that does not own the
+other teams' predictions.
+
+\paragraph{Limitations.} (i) One competition, one metric, one month; the transfer rates are
+specific to a 300k-row public split and to a synthetic generator whose noise is unusually high.
+(ii) The public board is a moving target: team counts changed from 2{,}977 to 3{,}061 during the
+study, and ties are resolved by submission time, so rank changes smaller than about 20 places
+are not meaningful. (iii) Part of the top of the board is selection over many submissions and
+cannot be attributed to modelling. (iv) Our adoption gate was overridden twice by the
+repository owner; both overrides are recorded with the observed $p$-values rather than hidden.
+(v) The study uses a single GPU and a single machine; timings are not comparable across
+hardware.
+
+\section{Reproducibility}
+Every number in this paper comes from a command in the repository. Folds and their hashes are
+stored with the preprocessors; model-selection files record weights, seeds, cross-validated
+scores, confirmation splits and the adoption gate.
+
+\begin{center}
+\small
+\begin{tabular}{ll}
+\toprule
+Stage & Command\\
+\midrule
+Preprocess and fix folds        & \texttt{python main.py preprocess} ; \texttt{main.py cv}\\
+Baselines and ablations         & \texttt{main.py baseline} ; \texttt{main.py features}\\
+Target statistics               & \texttt{main.py targetstats} ; \texttt{main.py explore}\\
+Hyper-parameter search          & \texttt{main.py tune --trials 16}\\
+Multi-seed final model          & \texttt{main.py final --seeds 42 1042 2042}\\
+Multi-family blend              & \texttt{main.py multimodel --weights 0.8 0.1 0.1}\\
+Data audit                      & \texttt{python analysis/audit.py}\\
+Tests                           & \texttt{python -m unittest discover -s tests}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The FT-Transformer member, the stacking study and the multi-family weight search were run as
+recorded experiment scripts; their outputs (out-of-fold predictions, test predictions, weights,
+paired statistics) are the inputs of the tables above. The 34 unit tests of the repository
+cover the leakage guarantees on which the protocol relies: per-fold fitting, unknown categories,
+probability bounds and OOF alignment.
+
+\section*{Acknowledgments}
+An AI research assistant helped orchestrate the experiments and prepare the manuscript. Every
+number in the tables above is reproducible from the recorded scripts, and every experiment was
+retained whether or not it succeeded.
+
+\bibliographystyle{plainnat}
+\bibliography{references}

@@ -1,0 +1,99 @@
+\begin{thebibliography}{13}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Chen and Guestrin(2016)]{chen2016}
+Tianqi Chen and Carlos Guestrin.
+\newblock {XGBoost}: A scalable tree boosting system.
+\newblock In \emph{Proceedings of the 22nd ACM SIGKDD International Conference
+  on Knowledge Discovery and Data Mining}, pages 785--794, 2016.
+\newblock \doi{10.1145/2939672.2939785}.
+
+\bibitem[DeLong et~al.(1988)DeLong, DeLong, and Clarke-Pearson]{delong1988}
+Elizabeth~R. DeLong, David~M. DeLong, and Daniel~L. Clarke-Pearson.
+\newblock Comparing the areas under two or more correlated receiver operating
+  characteristic curves: A nonparametric approach.
+\newblock \emph{Biometrics}, 44\penalty0 (3):\penalty0 837--845, 1988.
+\newblock \doi{10.2307/2531595}.
+
+\bibitem[Gorishniy et~al.(2021)Gorishniy, Rubachev, Khrulkov, and
+  Babenko]{gorishniy2021}
+Yury Gorishniy, Ivan Rubachev, Valentin Khrulkov, and Artem Babenko.
+\newblock Revisiting deep learning models for tabular data.
+\newblock In \emph{Advances in Neural Information Processing Systems}, 2021.
+\newblock arXiv:2106.11959.
+
+\bibitem[Gorishniy et~al.(2022)Gorishniy, Rubachev, and Babenko]{gorishniy2022}
+Yury Gorishniy, Ivan Rubachev, and Artem Babenko.
+\newblock On embeddings for numerical features in tabular deep learning.
+\newblock In \emph{Advances in Neural Information Processing Systems}, 2022.
+\newblock arXiv:2203.05556.
+
+\bibitem[Gorishniy et~al.(2025)Gorishniy, Kotelnikov, and
+  Babenko]{gorishniy2024tabm}
+Yury Gorishniy, Akim Kotelnikov, and Artem Babenko.
+\newblock {TabM}: Advancing tabular deep learning with parameter-efficient
+  ensembling.
+\newblock In \emph{International Conference on Learning Representations}, 2025.
+\newblock arXiv:2410.24210.
+
+\bibitem[Grinsztajn et~al.(2022)Grinsztajn, Oyallon, and
+  Varoquaux]{grinsztajn2022}
+L{\'e}o Grinsztajn, Edouard Oyallon, and Ga{\"e}l Varoquaux.
+\newblock Why do tree-based models still outperform deep learning on tabular
+  data?
+\newblock \emph{arXiv preprint arXiv:2207.08815}, 2022.
+
+\bibitem[Holzm{\"u}ller et~al.(2024)Holzm{\"u}ller, Grinsztajn, and
+  Steinwart]{holzmuller2024}
+David Holzm{\"u}ller, L{\'e}o Grinsztajn, and Ingo Steinwart.
+\newblock Better by default: Strong pre-tuned {MLP}s and boosted trees on
+  tabular data.
+\newblock In \emph{Advances in Neural Information Processing Systems}, 2024.
+\newblock arXiv:2407.04491.
+
+\bibitem[{Kaggle}(2026)]{kaggle_s6e10}
+{Kaggle}.
+\newblock Playground series {S6E10}: Predicting airline satisfaction.
+\newblock \url{https://www.kaggle.com/competitions/playground-series-s6e10},
+  2026.
+\newblock Competition, October 2026.
+
+\bibitem[{LightGBM developers}(2026)]{lightgbm_docs}
+{LightGBM developers}.
+\newblock {LightGBM} documentation: Parameters.
+\newblock \url{https://lightgbm.readthedocs.io/en/latest/Parameters.html},
+  2026.
+\newblock Accessed 2026-10-25.
+
+\bibitem[Micci-Barreca(2001)]{miccibarreca2001}
+Daniele Micci-Barreca.
+\newblock A preprocessing scheme for high-cardinality categorical attributes in
+  classification and prediction problems.
+\newblock \emph{ACM SIGKDD Explorations Newsletter}, 3\penalty0 (1):\penalty0
+  27--32, 2001.
+\newblock \doi{10.1145/507533.507538}.
+
+\bibitem[Northcutt et~al.(2021)Northcutt, Jiang, and Chuang]{northcutt2021}
+Curtis~G. Northcutt, Lu~Jiang, and Isaac~L. Chuang.
+\newblock Confident learning: Estimating uncertainty in dataset labels.
+\newblock \emph{Journal of Artificial Intelligence Research}, 2021.
+\newblock arXiv:1911.00068.
+
+\bibitem[Prokhorenkova et~al.(2018)Prokhorenkova, Gusev, Vorobev, Dorogush, and
+  Gulin]{prokhorenkova2018}
+Liudmila Prokhorenkova, Gleb Gusev, Aleksandr Vorobev, Anna~Veronika Dorogush,
+  and Andrey Gulin.
+\newblock {CatBoost}: unbiased boosting with categorical features.
+\newblock \emph{arXiv preprint arXiv:1706.09516}, 2018.
+
+\bibitem[Shwartz-Ziv and Armon(2022)]{shwartzziv2022}
+Ravid Shwartz-Ziv and Amitai Armon.
+\newblock Tabular data: Deep learning is not all you need.
+\newblock \emph{Information Fusion}, 81:\penalty0 84--90, 2022.
+\newblock \doi{10.1016/j.inffus.2021.11.011}.
+
+\end{thebibliography}

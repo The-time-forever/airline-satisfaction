@@ -1,0 +1,173 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[margin=2.1cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit,backgrounds,calc,shapes.geometric}
+\usepackage[colorlinks=true,linkcolor=blue!55!black,citecolor=blue!55!black,
+            urlcolor=blue!55!black]{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf,width=0.95\linewidth}
+\usepackage{titlesec}
+\titlespacing*{\section}{0pt}{1.1ex plus .3ex}{0.6ex}
+\titlespacing*{\subsection}{0pt}{0.9ex plus .2ex}{0.4ex}
+
+\definecolor{cData}{HTML}{56B4E9}
+\definecolor{cAudit}{HTML}{009E73}
+\definecolor{cModel}{HTML}{0072B2}
+\definecolor{cFuse}{HTML}{E69F00}
+\definecolor{cFail}{HTML}{B0B0B0}
+\definecolor{cAccent}{HTML}{D55E00}
+
+\newcommand{\auc}{ROC-AUC}
+\newcommand{\dlt}[1]{$#1\times10^{-4}$}
+
+\title{\vspace{-1.2cm}\bfseries Where the Gains Come From:\\[2pt]
+\large A Controlled Study of Feature, Model-Family and Ensemble Interventions\\
+on a 700k-row Synthetic Tabular Benchmark}
+\author{The Time Forever \quad (Kaggle: \textsf{adamsmith1112})\\[2pt]
+\small Playground Series S6E10 --- Predicting Airline Satisfaction}
+\date{October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Public leaderboards reward the final score, but practitioners rarely know which
+interventions actually move it. We study this question on Kaggle Playground S6E10
+(699{,}635 training rows, 21 features, \auc{}), where the data are synthesised from a
+public airline survey, and we measure every intervention on the same five stratified folds
+with paired DeLong inference and record its public-leaderboard effect. An audit of the data
+shows why the ceiling is low: 5.66\% of rows share their discrete feature signature with
+another row of the opposite label, 48.3\% of the test-time errors are confident errors, and
+the generator collapsed the delay distribution (mean 1.18 vs.\ 14.71 minutes), which removes a
+signal that exists in the original survey. Single-model work saturates at 0.9605
+\auc{}: capacity sweeps and 16 Optuna trials move the score by less than the paired noise
+floor of \dlt{2.2}. A ladder of more than twenty interventions then separates what transfers from what does
+not. Cross-fitted target statistics of the exact flight distance are the only large single
+gain (\dlt{13.5}); afterwards, \emph{new model families} transfer at a rate above one
+($+1.0$ \dlt{} cross-validated $\to$ $+1.5$ \dlt{} public), whereas seed averaging
+($+0.55 \to +0.1$), ten folds ($+0.14$), five stacking schemes ($\pm 0.3$) and five
+feature-side variants do not. The final eight-family logit blend reaches 0.960901
+cross-validated and 0.96062 public, i.e.\ rank 1{,}204 of 3{,}061 teams, and we quantify what
+the remaining 1.1 \dlt{} to the top decile would cost.
+\end{abstract}
+
+\section{Introduction}
+
+Kaggle Playground competitions are a convenient laboratory for tabular machine learning:
+the metric is fixed, the data are public, and thousands of teams optimise the same quantity.
+They are also a good place to study a question that matters outside competitions:
+\emph{which kinds of intervention actually improve generalisation, and which only improve the
+number you are looking at?}
+
+We take the October~2026 episode (S6E10, airline passenger satisfaction, binary \auc{}) and run
+a controlled study. Every intervention is applied to the same five stratified folds, all
+learned transforms are fitted inside the training part of each fold, and every comparison is
+reported as a paired difference with a DeLong standard error \citep{delong1988}. The same model
+is then submitted to the public leaderboard, so each change has two readings: a cross-validated
+one and a leaderboard one.
+
+Our contribution is empirical rather than algorithmic:
+\begin{itemize}\itemsep1pt
+\item a data audit that explains the low ceiling of the benchmark (label noise, a
+      generator artefact in the flight-distance support, a collapsed delay distribution,
+      and the semantics of zero-valued ratings);
+\item a leakage-safe protocol with paired inference and a pre-registered adoption rule, which
+      lets us separate real effects from noise at a resolution of $10^{-4}$;
+\item a ladder of more than twenty interventions measured twice (CV and public LB) that yields a
+      simple, quantitative rule: \emph{new model families transfer, everything else mostly does
+      not};
+\item a leaderboard analysis that turns the remaining gap into a cost estimate.
+\end{itemize}
+
+\section{Related work}
+
+\paragraph{What wins on tabular data.} Gradient-boosted trees remain the default for
+medium-sized tabular problems, and careful benchmarks attribute that to their robustness to
+uninformative features and to rotation invariance rather than to any failure of neural
+networks \citep{grinsztajn2022,shwartzziv2022}. The neural results improved substantially once
+numerical features were embedded rather than standardised \citep{gorishniy2022}, and once
+architectures were tuned with a modern recipe \citep{gorishniy2021,holzmuller2024}; parameter
+efficient ensembling pushes the same family further \citep{gorishniy2024tabm}. Our ensemble is
+built exactly along that axis: we keep LightGBM as the anchor and look for neural members that
+are strong \emph{and} decorrelated.
+
+\paragraph{Leakage-safe statistics and paired comparison.} Target encoding of a high-cardinality
+key is classical \citep{miccibarreca2001}, and its failure mode --- target leakage inside the
+training fold --- is well known; we use the inner cross-fitting that makes the estimate honest.
+Comparing two models on the same rows requires a paired test; the DeLong covariance
+\citep{delong1988} gives one in closed form, and it is what turns our $10^{-5}$ differences into
+statements about noise instead of statements about models. Label noise is usually estimated with
+confident learning \citep{northcutt2021}; here the discrete signatures give a direct, model-free
+estimate that we can check against the residual errors.
+
+\section{Pipeline and experimental design}
+Figure~\ref{fig:pipeline} summarises the study. Data and protocol are fixed first; the
+single-model ladder is explored until it saturates; model families are then added and blended;
+every candidate is read twice, on the folds and on the public board, and the rejected ideas are
+kept in the record because they bound what is worth trying next.
+
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[
+  font=\scriptsize,
+  stage/.style={draw, rounded corners=2pt, align=center, inner sep=2.2pt,
+                minimum height=13mm, text width=19mm, line width=0.5pt},
+  data/.style={stage, fill=cData!20, draw=cData!75!black},
+  audit/.style={stage, fill=cAudit!16, draw=cAudit!70!black},
+  model/.style={stage, fill=cModel!12, draw=cModel!70!black},
+  fuse/.style={stage, fill=cFuse!24, draw=cFuse!85!black},
+  lb/.style={stage, fill=cAccent!16, draw=cAccent!85!black},
+  bad/.style={draw=cFail!90!black, dashed, rounded corners=2pt, align=left,
+              inner sep=3pt, text width=98mm, fill=cFail!10, font=\scriptsize},
+  arr/.style={-{Latex[length=1.3mm]}, line width=0.5pt, draw=black!70},
+  badarr/.style={-{Latex[length=1.3mm]}, line width=0.5pt, draw=cFail!85!black, dashed},
+]
+\node[data] (data) at (0,0) {\textbf{Data}\\699{,}635 / 299{,}844\\21 features};
+\node[audit, right=2.2mm of data] (audit) {\textbf{Audit}\\signatures, provenance,\\adversarial split};
+\node[model, right=2.2mm of audit] (proto) {\textbf{Protocol}\\5 folds, per-fold fits,\\cross-fitted TE};
+\node[model, right=2.2mm of proto] (single) {\textbf{Single model}\\LightGBM ladder\\0.9605};
+\node[fuse, right=2.2mm of single] (fams) {\textbf{Families}\\9 members, native +\\neural, FT};
+\node[fuse, right=2.2mm of fams] (blend) {\textbf{Blend}\\logit average,\\fitted weights};
+\node[lb, right=2.2mm of blend] (lb) {\textbf{Public LB}\\0.96062\\rank 1{,}204/3{,}061};
+
+\draw[arr] (data) -- (audit);
+\draw[arr] (audit) -- (proto);
+\draw[arr] (proto) -- (single);
+\draw[arr] (single) -- (fams);
+\draw[arr] (fams) -- (blend);
+\draw[arr] (blend) -- (lb);
+
+\node[bad, below=11mm of fams, xshift=-6mm] (rejected)
+  {\textbf{Measured and rejected} (every delta below the paired noise floor of \dlt{2.2}):
+   stacking with five meta-learners; ten folds instead of five; three seeds per fold;
+   multi-view auxiliary features; teacher trained on the original survey; confident
+   pseudo-labels; signature / extra distance encodings; RealMLP defaults.};
+\draw[badarr] (single.south) -- ++(0,-4mm) -| ([xshift=-26mm]rejected.north);
+\draw[badarr] (fams.south) -- ++(0,-4mm) -| ([xshift=18mm]rejected.north);
+\end{tikzpicture}
+\caption{The study at a glance. The upper chain is the adopted pipeline; the dashed box lists the
+interventions that were measured on the same folds and rejected because their effect stayed
+inside the noise floor (or, for the leaderboard, inside the tie granularity).}
+\label{fig:pipeline}
+\end{figure*}
+
+\input{sections/02_data}
+\input{sections/03_protocol}
+\input{sections/05_families}
+\input{sections/07_lb}
+\input{sections/08_discussion}
+
+\end{document}
+

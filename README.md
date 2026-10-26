@@ -2,6 +2,8 @@
 
 当前方案及提交文件由 `artifacts/selected_model.json` 和 `artifacts/submission.csv` 记录。融合默认停用。
 
+实验结论整理为论文《Where the Gains Come From》（9 页，含 LaTeX 源码与绘图脚本）：[paper/main.pdf](paper/main.pdf)，构建说明见 [paper/README.md](paper/README.md)。
+
 Kaggle [Playground Series S6E10](https://www.kaggle.com/competitions/playground-series-s6e10/overview) 使用 ROC-AUC 评价满意概率预测。
 
 将 `train.csv`、`test.csv`、`sample_submission.csv` 放入 `data/`，运行预处理：
