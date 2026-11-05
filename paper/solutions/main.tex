@@ -1,0 +1,104 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[margin=2.1cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit,backgrounds,calc,shapes.geometric}
+\usepackage[colorlinks=true,linkcolor=blue!55!black,citecolor=blue!55!black,
+            urlcolor=blue!55!black]{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf,width=0.95\linewidth}
+\usepackage{titlesec}
+\titlespacing*{\section}{0pt}{1.1ex plus .3ex}{0.6ex}
+\titlespacing*{\subsection}{0pt}{0.9ex plus .2ex}{0.4ex}
+
+\definecolor{cData}{HTML}{56B4E9}
+\definecolor{cGen}{HTML}{E69F00}
+\definecolor{cModel}{HTML}{0072B2}
+\definecolor{cStack}{HTML}{009E73}
+\definecolor{cFail}{HTML}{B0B0B0}
+\definecolor{cAccent}{HTML}{D55E00}
+
+\newcommand{\auc}{ROC-AUC}
+\newcommand{\dlt}[1]{$#1\times10^{-4}$}
+
+\title{\vspace{-1.2cm}\bfseries How the Top Ten Solved Playground S6E10\\[2pt]
+\large A Survey of Winning Pipelines: Generative Scorers, Public OOF Stacks,\\
+and What the Final Leaderboard Actually Rewarded}
+\author{The Time Forever \quad (Kaggle: \textsf{adamsmith1112})\\[2pt]
+\small Companion to \emph{Where the Gains Come From}; Kaggle Playground S6E10}
+\date{November 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+We read every public write-up of the ten highest-placed teams in Kaggle Playground S6E10
+(airline satisfaction, 699{,}635 training rows, \auc) and reconstruct what they built.
+Five of the ten published solutions, one only in outline; the remaining five can be seen
+only through their leaderboard footprint. Two grammars account for all of them. The first models the
+joint distribution of a row and its label, classifies by Bayes' rule, and wins because the
+competition data were themselves sampled from a language model fitted to the original
+airline survey: a 124M-parameter GPT-2 that reads the label \emph{first} reaches 0.96242
+out-of-fold on its own, more than any GBDT, tabular foundation model or 250-column stack.
+The second grammar stacks a shared pool of public out-of-fold predictions with a strongly
+regularised logistic regression; on its own it saturates at $0.9624$ --- exactly where 126
+teams tie on the final private board. The winning margin came from adding a handful of
+generative members to such a stack, not from more trees. We quantify this with the final
+public and private leaderboards (four of the five best public entries collapsed), tabulate the
+self-reported gains of each ingredient, and close with the validation discipline that the
+top teams shared. Our companion study reported 0.96133 private from an eight-family blend;
+this survey explains the remaining $1.2$--$1.9\times10^{-3}$.
+\end{abstract}
+
+\section{Scope, sources and what can be verified}
+\label{sec:scope}
+
+Playground competitions end with a leaderboard and, if the community is generous, with
+write-ups. S6E10 ended on 31 October 2026 with 3{,}734 teams and an unusual amount of
+shared material: several teams published not only their pipelines but also the
+out-of-fold (OOF) predictions that other teams then stacked, and two of the strongest
+solutions are written as tutorials~\citep{kaggle_first,kaggle_qft,kaggle_qft2}.
+
+This document is a survey, not a reproduction. Its claims come from three sources, each
+with a different strength of evidence:
+\begin{enumerate}
+  \item \textbf{The final leaderboards.} We downloaded the public board (all 3{,}735 rows)
+        and the private top 200 with the Kaggle CLI; every number in
+        Section~\ref{sec:board} is computed from those files.
+  \item \textbf{The published solutions.} Discussions 754683 (1st), 754814 (4th),
+        754643 (5th), 754646 (7th), 754641 (9th), 754666 (11th), 754658 (16th),
+        754782 (25th), 755475 (28th) and 754691 (29th) are the primary sources for the
+        methods; all are cited as blog-style references, because that is what they are.
+  \item \textbf{The shared code.} Two of the tutorials include runnable notebooks and
+        prediction datasets, and the 7th-place team documents its file contract.
+\end{enumerate}
+Teams 2, 3, 6, 8 and 10 published nothing, so their rows in Table~\ref{tab:board} are
+markers only; we do not guess at their pipelines.
+
+\paragraph{Relation to our own run.}
+The companion paper~\citep{kaggle_s6e10} (this repository) documents a controlled ladder of
+feature, family and ensemble interventions on the same folds, ending at 0.960901
+cross-validated and 0.96133 private (rank 1{,}536). That study deliberately avoided the
+public-prediction ecosystem and the generator. This survey covers exactly the two things it
+left out, which is why it can name the mechanism behind the remaining gap.
+
+\input{sections/02_board}
+\input{sections/03_generator}
+\input{sections/04_systems}
+\input{sections/05_evidence}
+\input{sections/06_discipline}
+\input{sections/07_discussion}
+
+\end{document}
+

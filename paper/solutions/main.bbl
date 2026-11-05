@@ -1,0 +1,145 @@
+\begin{thebibliography}{17}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Alexdruso(2026)]{kaggle_twentyninth}
+Alexdruso.
+\newblock 29th place solution: Trust your {CV}, stack hard, miss the generator.
+\newblock
+  \url{https://www.kaggle.com/competitions/playground-series-s6e10/discussion/754691},
+  2026.
+\newblock Kaggle discussion 754691.
+
+\bibitem[Borisov et~al.(2023)Borisov, Se{\ss}ler, Leemann, Pawelczyk, and
+  Kasneci]{borisov2023greaT}
+Vadim Borisov, Kathrin Se{\ss}ler, Tobias Leemann, Martin Pawelczyk, and
+  Gjergji Kasneci.
+\newblock Language models are realistic tabular data generators.
+\newblock In \emph{International Conference on Learning Representations}, 2023.
+\newblock arXiv:2210.06280.
+
+\bibitem[Cremer(2026)]{kaggle_ninth}
+Fritz Cremer.
+\newblock 9th place solution: pre-trained transformer and trusting {CV}.
+\newblock
+  \url{https://www.kaggle.com/competitions/playground-series-s6e10/discussion/754641},
+  2026.
+\newblock Kaggle discussion 754641.
+
+\bibitem[DeLong et~al.(1988)DeLong, DeLong, and Clarke-Pearson]{deLong1988}
+Elizabeth~R. DeLong, David~M. DeLong, and Daniel~L. Clarke-Pearson.
+\newblock Comparing the areas under two or more correlated receiver operating
+  characteristic curves: A nonparametric approach.
+\newblock \emph{Biometrics}, 44\penalty0 (3):\penalty0 837--845, 1988.
+\newblock \doi{10.2307/2531595}.
+
+\bibitem[Deotte(2026{\natexlab{a}})]{kaggle_first}
+Chris Deotte.
+\newblock 1st place --- {TFMs} and {LLMs} with tabular data.
+\newblock
+  \url{https://www.kaggle.com/competitions/playground-series-s6e10/discussion/754683},
+  2026{\natexlab{a}}.
+\newblock Kaggle discussion 754683.
+
+\bibitem[Deotte(2026{\natexlab{b}})]{kaggle_qft}
+Chris Deotte.
+\newblock How to build a tabular transformer!
+\newblock
+  \url{https://www.kaggle.com/competitions/playground-series-s6e10/discussion/750009},
+  2026{\natexlab{b}}.
+\newblock Kaggle discussion 750009.
+
+\bibitem[Deotte(2026{\natexlab{c}})]{kaggle_qft2}
+Chris Deotte.
+\newblock Part 2 --- how to build a tabular transformer!
+\newblock
+  \url{https://www.kaggle.com/competitions/playground-series-s6e10/discussion/751334},
+  2026{\natexlab{c}}.
+\newblock Kaggle discussion 751334.
+
+\bibitem[Feng(2026)]{kaggle_eleventh}
+Xin Feng.
+\newblock 11th place solution --- {Q-FT} made the difference.
+\newblock
+  \url{https://www.kaggle.com/competitions/playground-series-s6e10/discussion/754666},
+  2026.
+\newblock Kaggle discussion 754666.
+
+\bibitem[{Kaggle}(2026)]{kaggle_s6e10}
+{Kaggle}.
+\newblock Playground series {S6E10}: Predicting airline satisfaction.
+\newblock \url{https://www.kaggle.com/competitions/playground-series-s6e10},
+  2026.
+\newblock Competition, October 2026; 3{,}734 teams.
+
+\bibitem[Mirzoyan(2026)]{kaggle_publicstack}
+Ashot Mirzoyan.
+\newblock Stacking every public {OOF} library: nested {CV} 0.96200.
+\newblock
+  \url{https://www.kaggle.com/competitions/playground-series-s6e10/discussion/746148},
+  2026.
+\newblock Kaggle discussion 746148.
+
+\bibitem[Mohsen(2026)]{kaggle_fifth}
+Abdelrahman Mohsen.
+\newblock 5th place solution from a late joiner.
+\newblock
+  \url{https://www.kaggle.com/competitions/playground-series-s6e10/discussion/754643},
+  2026.
+\newblock Kaggle discussion 754643.
+
+\bibitem[Pham and Dang(2026)]{kaggle_seventh}
+Van~Loc Pham and Nguyen Thai~An Dang.
+\newblock 7th place solution --- bagged generative transformer + logistic
+  stacking.
+\newblock
+  \url{https://www.kaggle.com/competitions/playground-series-s6e10/discussion/754646},
+  2026.
+\newblock Kaggle discussion 754646.
+
+\bibitem[R{\o}svold(2026)]{kaggle_fourth}
+Ole-Jakob R{\o}svold.
+\newblock 4th place solution writeup.
+\newblock
+  \url{https://www.kaggle.com/competitions/playground-series-s6e10/discussion/754814},
+  2026.
+\newblock Kaggle discussion 754814.
+
+\bibitem[Singhal(2026)]{kaggle_twentyfifth}
+Vedant Singhal.
+\newblock 25th place solution --- building a diverse stack and trusting
+  validation.
+\newblock
+  \url{https://www.kaggle.com/competitions/playground-series-s6e10/discussion/754782},
+  2026.
+\newblock Kaggle discussion 754782.
+
+\bibitem[Trinh(2026)]{kaggle_sixteenth}
+Tuong Trinh.
+\newblock 16th place solution: What i tried, why public {LB} went down when
+  {CV} went up.
+\newblock
+  \url{https://www.kaggle.com/competitions/playground-series-s6e10/discussion/754658},
+  2026.
+\newblock Kaggle discussion 754658.
+
+\bibitem[Warner et~al.(2024)Warner, Chaffin, Clavi{\'e},
+  et~al.]{warner2024modernbert}
+Benjamin Warner, Antoine Chaffin, Benjamin Clavi{\'e}, et~al.
+\newblock Smarter, better, faster, longer: A modern bidirectional encoder for
+  fast, memory efficient, and long context finetuning and inference.
+\newblock \emph{arXiv preprint arXiv:2412.13663}, 2024.
+
+\bibitem[Will et~al.(2026)Will, Tilii, and Aryan]{kaggle_twentyeighth}
+Will, Tilii, and Aryan.
+\newblock 28th on {K}aggle: Airline satisfaction with logistic and {CatBoost}
+  stacks.
+\newblock
+  \url{https://www.kaggle.com/competitions/playground-series-s6e10/discussion/755475},
+  2026.
+\newblock Kaggle discussion 755475.
+
+\end{thebibliography}

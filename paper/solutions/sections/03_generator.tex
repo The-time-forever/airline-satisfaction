@@ -1,0 +1,135 @@
+\section{The decisive fact: the rows were written by a language model}
+\label{sec:generator}
+
+The 1st-place write-up opens with a claim that reorganises the whole competition: the
+training rows were sampled from GReaT~\citep{borisov2023greaT}, a GPT-2 fine-tuned on the
+original 129{,}880-row airline survey, and the target is written \emph{before} the
+features. Three independent checks support it.
+
+\emph{Tokenizer fingerprints.} In the generated columns, a three-digit flight distance is a
+single GPT-2 token while a four-digit distance is two tokens sharing a prefix --- exactly
+what byte-level BPE does to numbers, and not what a tabular generator would do.
+
+\emph{Sampling parameters.} A temperature of 0.7 with top-$k=50$ reproduces the distortions
+the data show: departure delays collapse onto zero (mean 1.18 minutes against 14.71 in the
+original survey) while the tail is truncated. The 29th-place team fitted a temperature per
+column and recovered $T\approx0.7$ on both high-cardinality columns, with the
+Kullback--Leibler divergence to the synthetic marginal falling from 0.308 to 0.004 for the
+delay column~\citep{kaggle_twentyninth}. Our own audit reached the same delay collapse from
+the other direction, without knowing its cause.
+
+\emph{The prior is reproduced exactly.} Conditioning on \texttt{satisfaction is True}
+first and sampling forward reproduces the 44.36\% positive rate of the training set. A
+generator that writes the label last cannot do that.
+
+\subsection{Two ways to read a row}
+
+If the data are $p(y)\,p(x\mid y)$, the Bayes-optimal classifier is not the discriminative
+$p(y\mid x)$ that everyone trains; it is the likelihood ratio
+\begin{equation}
+\log\frac{p(y{=}1\mid x)}{p(y{=}0\mid x)}
+= \log\frac{\pi}{1-\pi}
++ \sum_{j=1}^{21}\Big[\log p(x_j\mid x_{<j},y{=}1)-\log p(x_j\mid x_{<j},y{=}0)\Big],
+\label{eq:bayes}
+\end{equation}
+with $\pi=0.4436$ estimated on the training rows. Figure~\ref{fig:directions} contrasts the
+two readings. The \emph{detective} appends the target and reads it from the last position:
+one forward pass per row, but it is a classifier trained on 700k rows, and it reaches only
+$\approx0.961$. The \emph{storyteller} runs the same model twice, once per label, and adds
+the log-probabilities of the observed features: the label is never predicted, only scored.
+No feature tokenizer, no architecture change, no extra data --- a stock GPT-2 with the
+right prompt direction.
+
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[
+  font=\scriptsize,
+  cell/.style={draw, rounded corners=1.5pt, inner sep=2.2pt, minimum height=5.4mm,
+               line width=0.4pt, fill=white, anchor=west},
+  lab/.style={cell, fill=cGen!35, draw=cGen!85!black},
+  feat/.style={cell, fill=cData!14, draw=cData!70!black},
+  note/.style={anchor=west, align=left, font=\scriptsize, text width=150mm},
+  head/.style={anchor=west, font=\scriptsize\bfseries},
+]
+% ---- (a) generation -------------------------------------------------------
+\node[head] at (0,0) {(a) how the rows were made (GReaT)};
+\node[lab]  (g1) at (0,-0.55) {\texttt{satisfaction is True}};
+\node[feat, right=1.2mm of g1] (g2) {\texttt{Gender is Female}};
+\node[feat, right=1.2mm of g2] (g3) {\texttt{Age is 36}};
+\node[feat, right=1.2mm of g3] (g4) {$\cdots$};
+\node[feat, right=1.2mm of g4] (g5) {\texttt{Arrival Delay is 0.0}};
+\node[note] at (0,-1.15)
+  {label first; GPT-2 tokenizer; sampled token by token at $T{=}0.7$, top-$k{=}50$;
+   three-digit flight distances become a single token, four-digit ones two.};
+
+% ---- (b) detective --------------------------------------------------------
+\node[head] at (0,-2.05) {(b) detective: append the label and read it};
+\node[feat] (d1) at (0,-2.6) {\texttt{Gender is Female}};
+\node[feat, right=1.2mm of d1] (d2) {$\cdots$};
+\node[feat, right=1.2mm of d2] (d3) {\texttt{Arrival Delay is 0.0}};
+\node[lab, right=1.2mm of d3] (d4) {\texttt{satisfaction is ?}};
+\node[note] at (0,-3.2)
+  {one forward pass per row; read $P(\text{True})$ at the final position; learns
+   $p(y\mid x)$ from the 699{,}635 competition rows; OOF $\approx0.961$.};
+
+% ---- (c) storyteller ------------------------------------------------------
+\node[head] at (0,-4.05) {(c) storyteller: fix each label and score the features};
+\node[lab]  (s1) at (0,-4.6) {\texttt{satisfaction is True}};
+\node[feat, right=1.2mm of s1] (s2) {\texttt{Gender is Female}};
+\node[feat, right=1.2mm of s2] (s3) {$\cdots$};
+\node[feat, right=1.2mm of s3] (s4) {\texttt{Arrival Delay is 0.0}};
+\node[lab,  below=1.2mm of s1] (s5) {\texttt{satisfaction is False}};
+\node[feat, below=1.2mm of s2] (s6) {\texttt{Gender is Female}};
+\node[feat, below=1.2mm of s3] (s7) {$\cdots$};
+\node[feat, below=1.2mm of s4] (s8) {\texttt{Arrival Delay is 0.0}};
+\node[note] at (0,-5.75)
+  {two forward passes per row; sum $\log p(x_j\mid x_{<j},y)$ under each label, average
+   over 8--32 random column orders, subtract, add the training prior.};
+
+\node[draw, rounded corners=2pt, fill=cStack!12, draw=cStack!70!black, inner sep=3.5pt,
+      font=\scriptsize, anchor=west] (eq) at (0,-6.55)
+  {$\displaystyle
+   \log\frac{p(y{=}1\mid x)}{p(y{=}0\mid x)}
+   =\log\frac{\pi}{1-\pi}+\log p(x\mid y{=}1)-\log p(x\mid y{=}0)$};
+\node[anchor=west, font=\scriptsize, text width=62mm] (eqnote) at (10.2,-6.55)
+  {same weights as (b); the label is never predicted, only scored};
+\end{tikzpicture}
+\caption{The generator and the two ways to interrogate it. (a) Rows were sampled from a
+GPT-2 fine-tuned on the original survey, with the label written first. (b) The obvious
+classifier appends the label and reads it; it learns $p(y\mid x)$ from 700k rows.
+(c) The winning direction writes each label first, scores the features under both labels,
+and combines them with the training prior; the label is never predicted. Both (b) and (c)
+use the same network.}
+\label{fig:directions}
+\end{figure*}
+
+
+\subsection{How much the direction is worth}
+
+Table~\ref{tab:generative} collects the numbers published by the teams. The ordering is
+consistent across three independent implementations: discriminative reading $\approx0.961$;
+generative scoring $0.9620$--$0.9625$; and the difference survives when the generative model
+is a from-scratch transformer rather than GPT-2, which rules out ``GPT-2 memorised the
+original survey'' as the whole explanation.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Single-model \auc{} for the generative family, as reported by the teams.
+``OOF'' is out-of-fold on the shared five-fold split.}
+\label{tab:generative}
+\begin{tabular}{lll}
+\toprule
+Model & OOF \auc{} & Source\\
+\midrule
+GPT-2 small, target last (discriminative)      & 0.9610            & \citet{kaggle_first}\\
+Q-FT v2 (ModernBERT encoder, set reading)      & 0.96080           & \citet{kaggle_qft2}\\
+AO-ARM, best single recipe                     & 0.96201           & \citet{kaggle_fourth}\\
+GenPure, one seed (6 layers, width 256)        & 0.96119           & \citet{kaggle_seventh}\\
+GPT-2 medium / large, target first             & 0.96237 / 0.96236 & \citet{kaggle_first}\\
+GPT-2 small, target first                      & 0.96242           & \citet{kaggle_first}\\
+GPT-2 small, target anywhere                   & 0.96245           & \citet{kaggle_first}\\
+\bottomrule
+\end{tabular}
+\end{table}
+

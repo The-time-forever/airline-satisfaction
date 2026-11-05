@@ -1,0 +1,71 @@
+\section{The part that is cheap to copy: validation discipline}
+\label{sec:discipline}
+
+Every top write-up spends more words on selection than on models, and the protocols are
+nearly identical. Figure~\ref{fig:protocol} renders the consensus.
+
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[
+  font=\scriptsize,
+  stage/.style={draw, rounded corners=2pt, align=center, inner sep=2.2pt,
+                minimum height=13mm, text width=28mm, line width=0.5pt},
+  fold/.style={stage, fill=cData!18, draw=cData!70!black},
+  check/.style={stage, fill=cStack!14, draw=cStack!70!black},
+  meta/.style={stage, fill=cModel!12, draw=cModel!70!black},
+  gate/.style={stage, fill=cGen!24, draw=cGen!85!black},
+  sub/.style={stage, fill=cAccent!14, draw=cAccent!85!black},
+  note/.style={draw=cFail!90!black, dashed, rounded corners=2pt, align=left,
+               inner sep=3pt, text width=60mm, fill=cFail!10, font=\scriptsize},
+  arr/.style={-{Latex[length=1.3mm]}, line width=0.5pt, draw=black!70},
+  dasharr/.style={-{Latex[length=1.3mm]}, line width=0.5pt, draw=cFail!85!black, dashed},
+]
+\node[fold] (f) {\textbf{Freeze the split}\\5 stratified folds,\\one seed, saved + hashed};
+\node[check, right=2mm of f] (c) {\textbf{Stream contract}\\ids, labels, fold ids,\\SHA-256, OOF AUC recompute};
+\node[meta, right=2mm of c] (m) {\textbf{Nested stacker}\\fit on four folds' OOF,\\score the fifth};
+\node[gate, right=2mm of m] (g) {\textbf{Pre-registered screen}\\$\ge +2\times10^{-5}$ pooled,\\4/5 folds up, $\ge 2$ SE};
+\node[sub, right=2mm of g] (s) {\textbf{Two submissions}\\own-only stack and\\public-assisted stack};
+\draw[arr] (f) -- (c);
+\draw[arr] (c) -- (m);
+\draw[arr] (m) -- (g);
+\draw[arr] (g) -- (s);
+\node[note, below=7mm of m, xshift=12mm] (n)
+  {\textbf{Not used for selection:} the public board. Two correlated submissions differ on
+   public by about $2\times10^{-5}$ (one standard deviation), while the last week's
+   improvements were smaller than that; four of the five best public entries finished
+   outside the private top 200.};
+\end{tikzpicture}
+\caption{The selection protocol shared by the top teams. The first three boxes make a
+number honest; the fourth stops the team from chasing it; the fifth acknowledges that the
+two candidate answers are different questions.}
+\label{fig:protocol}
+\end{figure*}
+
+Four details are worth naming, because they are where most pipelines lose their CV:
+
+\begin{enumerate}
+  \item \textbf{A frozen split with a file contract.} The 7th-place team wrote every stream
+        to the same layout (id, label, fold, OOF probability, test probability), then
+        verified row order, label equality, fold equality, a producer-recorded SHA-256, and
+        that the OOF \auc{} recomputes to $10^{-9}$. With 56--300 streams, one misaligned
+        column is invisible in the total score but fatal to the stack.
+  \item \textbf{Nested stacking.} The stacker is fitted on four folds' OOF and scored on
+        the fifth, so the reported stack score is not the score of a model that saw its own
+        validation rows. Teams that skipped this reported CV figures that did not transfer.
+  \item \textbf{A screen fixed before the result.} The 7th-place threshold --- pooled gain
+        $\ge 2\times10^{-5}$, at least four of five folds up, worst fold no worse than
+        $-2\times10^{-5}$, mean gain at least two standard errors --- was written down
+        before candidates were run. The 29th-place team pre-registered every experiment and
+        reported the nulls.
+  \item \textbf{A sealed holdout for the final claim.} The 16th-place team kept fold 0
+        untouched (139{,}927 rows) and used paired DeLong standard errors
+        \citep{deLong1988} on it for the last decisions, then submitted two files: an
+        own-only stack and a public-assisted one.
+\end{enumerate}
+
+The counter-example is instructive. The 4th-place team's hill-climbing variant improved
+cross-validated \auc{} by \dlt{3} over plain logistic regression but lost \dlt{5}--\dlt{10}
+on public; the 16th-place team's 50/50 blend with the public leader gained \dlt{190} on
+public and lost \dlt{50} on private. Both are the same phenomenon seen from two sides: with
+300 correlated columns, a selection procedure with many degrees of freedom will fit the
+30\% split, and the private board will charge for it.

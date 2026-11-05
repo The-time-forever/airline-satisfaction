@@ -1,0 +1,68 @@
+\section{What moved the needle, and what did not}
+\label{sec:evidence}
+
+The write-ups contain enough ablations to separate ingredients, although each was measured
+against a different baseline. Table~\ref{tab:deltas} collects them in units of $10^{-4}$
+\auc; the right-hand column names the measurement, because these are not interchangeable.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Reported effects of individual ingredients, in \dlt{} of \auc. Numbers come from
+different baselines and fold protocols, so compare magnitudes, not sums.}
+\label{tab:deltas}
+\begin{tabular}{p{5.6cm}p{2.2cm}p{5.2cm}}
+\toprule
+Ingredient & effect & measured as\\
+\midrule
+Route id (flight distance) with fold-safe target encoding, crosses and original-data
+  per-route rates & $+15$ & single LightGBM, 5-fold \citep{kaggle_twentyninth}\\
+First generative member added to a 245-column public stack & $+48$ & stack CV
+  0.96218 $\to$ 0.96266 \citep{kaggle_first}\\
+GReaT surrogate log-likelihood ratios from a distilgpt2 fitted on the original survey
+  & $+28$ & standalone member \citep{kaggle_sixteenth}\\
+Appending the original 129{,}880 rows (after route features) & $+2$ to $+3$
+  & LightGBM / RealMLP \citep{kaggle_twentyninth}\\
+Teacher logit trained on the original survey & $+2$ & LightGBM feature\\
+Label-free auxiliary targets (predict each column from the other 20) & $+1$ & LightGBM feature\\
+TabPFN-3.5 or TabICL members in a public-only stack & $+1$ & nested CV \citep{kaggle_publicstack}\\
+Ten-fold instead of five-fold members & $+1$ & nested CV \citep{kaggle_publicstack}\\
+Another GBDT or RealMLP member of the same kind & $+0.1$ to $+0.3$ & nested CV\\
+Extra seeds of a generative transformer & $+0.7$, then $+0.8$, then $+0.1$
+  & 3, 7 and 4 additional seeds \citep{kaggle_seventh}\\
+SFS / hill-climbing instead of plain $L_2$ logistic & $-5$ to $-10$ on public, $+3$ on CV
+  & 189-stream stack \citep{kaggle_fourth}\\
+Blending 50/50 with the best public submission & $+190$ public, $-50$ private
+  & 312-column stack \citep{kaggle_sixteenth}\\
+Distilling from OOF predictions & $+50$ (leak) & matched leaky-vs-honest run
+  \citep{kaggle_twentyninth}\\
+Selecting the neural-network epoch on the scored fold & $+2$ (inflation) & RealMLP OOF
+  \citep{kaggle_twentyninth}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three lessons follow from the table.
+
+\emph{The generator is not another member.} Adding a good GBDT to a 250-column stack is
+worth a third of a $10^{-4}$; adding one generative scorer is worth fifty. The reason is
+visible in Figure~\ref{fig:ladder}: the members of the pool are all approximations of the
+same conditional $p(y\mid x)$, so their errors are correlated, and a linear head can only
+average them. A scorer of $p(x\mid y)$ makes mistakes on different rows --- which is also
+why the 4th-place team could reach 0.96304 with no public predictions at all.
+
+\emph{Feature work still matters, but only of one kind.} The largest single feature gain in
+the whole competition is not a new model: it is treating \texttt{flight\_distance} as a
+route identifier. It has 3{,}521 distinct values, all of which occur in the original survey;
+per-route satisfaction rates correlate 0.87 with the original data, and a fold-safe target
+encoding of that key (alone, then crossed with class, travel type and customer type) plus
+the original per-route rate and route counts is worth \dlt{15} on a single LightGBM. The
+original rows only help \emph{after} this feature exists, because each route then gains
+about 37 labelled rows.
+
+\emph{Everything else is inside the noise.} Seed averaging, extra folds, meta-learner
+choice, calibration and most feature transforms stay below \dlt{2}. The 29th-place team ran
+about twenty pre-registered experiments in the last two weeks --- new families (TabR,
+ModernNCA, FT-Transformer, random-feature kernels), TFMs on their own features,
+pseudo-labelling, six stacker variants --- and every honest result landed within
+\dlt{1} of the stack. A large logistic stack absorbs ``another good model''.

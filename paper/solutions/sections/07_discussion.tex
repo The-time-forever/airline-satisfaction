@@ -1,0 +1,121 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\paragraph{Why a language model beats the models we usually tune.}
+A GBDT on 21 columns learns a function of the marginals and a handful of interactions it
+happens to split on. The data, however, were drawn from a joint distribution over 21
+columns with strong dependence: delays, distance and cabin co-vary, and the generator
+reproduces that joint at a temperature low enough to sharpen it. Scoring $p(x\mid y)$ uses
+all of it, including the parts that do not predict the label but do constrain which rows
+are plausible. The gap between 0.961 (discriminative GPT-2) and 0.9624 (same network, other
+direction) is the value of that joint structure, not of scale: GPT-2 medium and large are
+no better than small, while the direction is worth more than twenty times a new GBDT.
+
+\paragraph{Is it a leak?}
+No, and the write-ups are careful about it. The original survey is a public dataset that
+the competition rules allow; fitting a density to it and applying Bayes' rule is a modelling
+choice. The 4th-place result --- 0.96201 from a transformer trained from scratch on the
+competition rows, with learned embeddings and no GPT-2 weights --- shows that the direction
+matters even without the original corpus, and the 1st-place team re-ran the target-last
+recipe on non-synthetic data and still beat XGBoost. What the generator gives is a prior
+over rows; the competition still decides who estimates it best.
+
+\paragraph{Why the stacks converge to 0.9624.}
+Public OOF predictions are not independent evidence: they are many estimators of the same
+conditional, trained on the same 700k rows, with the same features. A logistic head over
+250 of them behaves like a very well-regularised average, and its ceiling is the ceiling of
+that conditional. This is also why the private board ties at five decimals for 126 teams:
+the differences that remain are the arbitrary ones.
+
+\paragraph{Limitations of this survey.}
+(i) We did not rerun any winning pipeline; every number in Sections~\ref{sec:generator}
+and~\ref{sec:evidence} is self-reported, and the baselines differ (5 folds with different
+seeds, different target encodings). (ii) Five of the top ten published nothing; we name
+their reported backbones only where other write-ups credit them. (iii) Stack scores on
+pooled public OOF are mildly optimistic, as the 25th-place team states explicitly: the
+members were fitted on the same labels the stacker is scored against. (iv) The private
+scores we use come from the leaderboard, whose ties at five decimals hide differences below
+$10^{-5}$.
+
+\paragraph{What generalises beyond this competition.}
+Two practices transfer to any tabular problem. First, \emph{identify the data-generating
+process before tuning}: here a tokenizer fingerprint and a temperature sweep cost an
+afternoon and were worth \dlt{140} over the best conventional pipeline. Second, \emph{make
+the validation honest enough to prefer a null result}: a frozen split, a file contract,
+nested stacking and a pre-registered screen are cheap, and they are what separated the
+teams that climbed from the teams that fell.
+
+For our own repository, the actionable list is short: treat \texttt{flight\_distance} as a
+route key with fold-safe target statistics (worth \dlt{15} on a single LightGBM in the
+29th-place measurement), add a generative scorer as a member rather than as a replacement,
+and re-tune the stacker's shrinkage whenever the pool grows.
+
+\section{Reproducing this survey}
+\label{sec:repro}
+
+\begin{sloppypar}
+Everything used here is public and was collected with the Kaggle CLI into
+\texttt{artifacts/solutions/}: \texttt{leaderboard\_full.csv} (public board, 3{,}735 rows),
+\texttt{leaderboard\_top200.csv} (private top 200), the ten write-ups as plain text under
+\texttt{discussions/}, and one public stacking notebook. The two plotted figures are
+produced by \texttt{paper/solutions/figures.py}; the two diagrams are TikZ in this
+document.
+\end{sloppypar}
+
+\begin{verbatim}
+kaggle competitions leaderboard playground-series-s6e10 -d
+kaggle competitions leaderboard playground-series-s6e10 --show -v --page-size 200
+kaggle competitions topics list playground-series-s6e10 --sort-by top
+kaggle competitions topics show playground-series-s6e10 754683
+python paper/solutions/figures.py
+\end{verbatim}
+
+Two practical notes for Windows users: the leaderboard archive contains a colon in its
+entry name, so \texttt{Expand-Archive} refuses it and the CSV has to be extracted with
+Python's \texttt{zipfile}; and the CLI prints Unicode minus signs, which requires
+\texttt{PYTHONIOENCODING=utf-8} in a GBK console.
+
+\appendix
+\setlength{\emergencystretch}{2em}
+\section{Recipe card for a generative scorer}
+\label{app:recipe}
+
+The following is the minimal version of the winning recipe, assembled from the four
+published implementations. It assumes only a causal language model, no feature tokenizer
+and no GPU cluster: GPT-2 small fits in 8\,GB and the five folds take a few hours on a
+single mid-range GPU.
+
+\begin{verbatim}
+# 1. serialise a row exactly like the original file
+text(row, y) = "satisfaction is {y}, " + ", ".join(f"{c} is {v}" for c, v in row)
+               # integer age, one-decimal delays, "None" for missing
+
+# 2. fit the generator on the original survey (129,880 rows)
+model = GPT2small()
+train_lm(model, [text(row, y) for row, y in original], epochs=60)
+
+# 3. per fold: fine-tune, then score every validation and test row twice
+for k in range(5):
+    fold_model = train_lm(clone(model),
+                          [text(row, y) for row, y in train if fold_id[row] != k],
+                          epochs=8)
+    for row in valid[k] + test:
+        for y in (True, False):
+            L[y] = mean_over_orders(sum_j log p_fold_model(x_j | x_<j, y))
+        z[row] = log(pi / (1 - pi)) + L[True] - L[False]
+\end{verbatim}
+
+Four details decide whether this reproduces 0.9624 or 0.9610: (i) the label must come
+\emph{first}; (ii) the serialisation must match the file the generator was trained on
+(integer vs.\ float formatting, \texttt{None} for missing values); (iii) use a tokenizer
+that keeps numbers compact --- GPT-2's, not a digit-wise one; and (iv) average the
+log-likelihood difference over several column orders (8--32), which removes the arbitrary
+order the model would otherwise memorise. The 7th-place team's variant replaces steps 2--3
+with a from-scratch 6-layer transformer over per-column token vocabularies and keeps the
+same scoring rule; the 4th-place variant does the same with 32 orders and a learned column
+embedding. Both reach the same region, which is the strongest evidence that the direction,
+not the backbone, is doing the work.
+
+\sloppy
+\bibliographystyle{plainnat}
+\bibliography{references}

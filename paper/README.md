@@ -1,5 +1,10 @@
 # Paper: *Where the Gains Come From*
 
+A companion survey, [`solutions/main.pdf`](solutions/main.pdf), reads the public write-ups
+of the ten highest-placed teams in the same competition and explains their pipelines
+(*How the Top Ten Solved Playground S6E10*); its sources, figures and build live in
+`paper/solutions/`.
+
 LaTeX source of the study report for Kaggle Playground S6E10, plus the scripts that generate
 every figure. The paper is self-contained: all numbers come from the experiment artefacts in
 `artifacts/` and from `analysis/OPTIMIZATION_REVIEW.md`; no value is estimated by hand.
